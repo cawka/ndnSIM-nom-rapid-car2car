@@ -63,7 +63,7 @@ public:
   Serialize(TagBuffer i) const;
 
   virtual void
-  Deserialize(ns3::TagBuffer i);
+  Deserialize(TagBuffer i);
 
   virtual void
   Print(std::ostream&) const;
@@ -81,6 +81,12 @@ class GeoTransmissionTag : public GeoTag
 public:
   static TypeId
   GetTypeId ();
+
+  virtual
+  TypeId GetInstanceTypeId () const
+  {
+    return GeoTransmissionTag::GetTypeId ();
+  }
 };
 
 /**
@@ -92,6 +98,12 @@ class GeoSrcTag : public GeoTag
 public:
   static TypeId
   GetTypeId ();
+
+  virtual
+  TypeId GetInstanceTypeId () const
+  {
+    return GeoSrcTag::GetTypeId ();
+  }
 };
 
 } // namespace ns3
