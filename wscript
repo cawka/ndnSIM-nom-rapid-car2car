@@ -23,7 +23,7 @@ def options(opt):
                    help=('Enable time for the executed command'),
                    action="store_true", default=False, dest='time')
 
-    opt.load("compiler_c compiler_cxx boost ns3 ns3_runner")
+    opt.load("compiler_c compiler_cxx boost ns3")
 
 def configure(conf):
     conf.load("compiler_cxx boost ns3")
@@ -104,13 +104,3 @@ def shutdown (ctx):
             argv = ["time"] + argv
 
         return subprocess.call (argv)
-
-def batch (bld):
-    from waflib import Options
-    Options.commands = ['build', 'run'] + Options.commands
-
-def run (bld):
-    # Logs.info ("Running a batach of experiments")
-    bld.load('ns3_runner')
-    runner = bld.tools['ns3_runner']
-    runner.perform (bld)

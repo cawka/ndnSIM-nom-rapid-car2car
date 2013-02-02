@@ -31,11 +31,20 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 
+#include "ndn-v2v-net-device-face.h"
+
 using namespace ns3;
 using namespace boost;
 using namespace std;
 
-NS_LOG_COMPONENT_DEFINE ("CarPusher");
+NS_LOG_COMPONENT_DEFINE ("Experiment");
+
+Ptr<ndn::NetDeviceFace>
+V2vNetDeviceFaceCallback (Ptr<Node> node, Ptr<NetDevice> device)
+{
+  NS_LOG_DEBUG ("Creating ndn::V2vNetDeviceFace on node " << node->GetId ());
+  return CreateObject<ndn::V2vNetDeviceFace> (node, device);
+}
 
 int
 main (int argc, char *argv[])
@@ -79,7 +88,6 @@ main (int argc, char *argv[])
 
   cmd.Parse (argc,argv);
 
-
   uint32_t numberOfCars = 1000;
   if (fixedDistance > 0)
     {
@@ -120,29 +128,30 @@ main (int argc, char *argv[])
                                  "MinGap", DoubleValue(distance),
                                  "MaxGap", DoubleValue(distance));
 
-  mobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel",
+  mobility.SetMobilityModel("ns3::CustomConstantVelocityMobilityModel",
                             "ConstantVelocity", VectorValue(Vector(26.8224, 0, 0)));
 
   // Create nodes
   NodeContainer nodes;
   nodes.Create (numberOfCars);
 
-  // 1. Install Wifi
-  NetDeviceContainer wifiNetDevices = wifi.Install (wifiPhyHelper, wifiMac, nodes);
-
-  // 2. Install Mobility model
+  // 1. Install Mobility model
   mobility.Install (nodes);
 
-  // 3. Install CCNx stack
+  // 2. Install Wifi
+  NetDeviceContainer wifiNetDevices = wifi.Install (wifiPhyHelper, wifiMac, nodes);
+
+  // 3. Install NDN stack
   NS_LOG_INFO ("Installing NDN stack");
   ndn::StackHelper ndnHelper;
+  ndnHelper.AddNetDeviceFaceCreateCallback (WifiNetDevice::GetTypeId (), MakeCallback (V2vNetDeviceFaceCallback));
   ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::V2v");
   ndnHelper.SetContentStore ("ns3::ndn::cs::Lru",
                              "MaxSize", "10000");
   ndnHelper.SetDefaultRoutes(true);
   ndnHelper.Install(nodes);
 
-// XXXX
+// // XXXX logging
 
   // 4. Set up applications
   NS_LOG_INFO ("Installing Applications");
@@ -150,7 +159,6 @@ main (int argc, char *argv[])
   ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerBatches");
   consumerHelper.SetPrefix ("/very-long-prefix-requested-by-client/this-interest-hundred-bytes-long-");
   consumerHelper.SetAttribute ("Batches", StringValue (batches));
-  consumerHelper.SetAttribute ("InterestRate", UintegerValue (interestRate));
 
   ndn::AppHelper producerHelper ("ns3::ndn::Producer");
   producerHelper.SetPrefix ("/");

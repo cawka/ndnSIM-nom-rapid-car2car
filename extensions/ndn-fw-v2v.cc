@@ -21,6 +21,8 @@
 #include "ndn-fw-v2v.h"
 #include "ndn-v2v-net-device-face.h"
 
+#include <ns3/ndnSIM/utils/ndn-fw-hop-count-tag.h>
+
 #include <ns3/log.h>
 #include <ns3/ptr.h>
 #include <ns3/assert.h>
@@ -97,8 +99,14 @@ V2v::DidReceiveUnsolicitedData (Ptr<Face> inFace,
                                 Ptr<const Packet> payload,
                                 Ptr<const Packet> origPacket)
 {
-  // Opportunistically add or update entry in the content store
-  bool newEntry = m_contentStore->Add (header, payload);
+  FwHopCountTag hopCountTag;
+
+  Ptr<Packet> payloadCopy = payload->Copy ();
+  payloadCopy->RemovePacketTag (hopCountTag);
+
+  // Add or update entry in the content store
+  bool newEntry = m_contentStore->Add (header, payloadCopy);
+
   if (!newEntry)
     {
       NS_LOG_DEBUG ("ContentObject is already in cache. Don't start low-priority processing");

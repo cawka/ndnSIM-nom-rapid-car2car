@@ -21,6 +21,7 @@
 #define HIGHWAY_POSITION_ALLOCATOR_H
 
 #include "ns3/position-allocator.h"
+#include "ns3/random-variable.h"
 
 namespace ns3 {
 
@@ -57,7 +58,7 @@ private:
   double m_min_gap;
   double m_max_gap;
 
-  mutable UniformRandomVariable m_random_gap_var;
+  mutable UniformVariable m_random_gap_var;
 };
 }
 

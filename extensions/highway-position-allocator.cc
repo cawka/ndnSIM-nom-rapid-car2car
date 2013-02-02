@@ -69,7 +69,7 @@ HighwayPositionAllocator::HighwayPositionAllocator (){
   m_previous_position = Vector(0.0, 0.0, 0.0);
 }
 
-Vector HighwayPositionAllocator::GetNext (void) const{
+Vector HighwayPositionAllocator::GetNext (void) const {
   double random_gap = m_random_gap_var.GetValue (m_min_gap, m_max_gap);
 
   double delta_x = random_gap * cos(m_direction);
@@ -127,8 +127,8 @@ double HighwayPositionAllocator::GetMaxGap(void) const {
 int64_t
 HighwayPositionAllocator::AssignStreams (int64_t stream)
 {
-  m_random_gap_var.SetStream (stream);
-  return 1;
+  // m_random_gap_var.SetStream (stream);
+  return 0;
 }
 
 }
