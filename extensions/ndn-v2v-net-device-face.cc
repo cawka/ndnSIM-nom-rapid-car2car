@@ -165,32 +165,35 @@ V2vNetDeviceFace::GetMaxDelayLowPriority () const
 }
 
 
-V2vNetDeviceFace::Item::Item (const Time &_gap, const Ptr<Packet> &_packet)
-  : gap (_gap), packet (_packet), retxCount (0)
+V2vNetDeviceFace::Item::Item (const Time &gap, const Ptr<Packet> &packet)
+  : m_gap (gap), m_packet (packet), m_retxCount (0)
 {
-  NS_LOG_FUNCTION (this << _gap << _packet);
+  // NS_LOG_FUNCTION (this << _gap << _packet);
+
+  m_name = HeaderHelper::GetName (packet); // not efficient (extra deserialization), but it is the only way for now
+  NS_ASSERT (m_name != 0);
 
   HeaderHelper::Type guessedType = HeaderHelper::GetNdnHeaderType (packet);
   if (guessedType == HeaderHelper::INTEREST_CCNB ||
       guessedType == HeaderHelper::INTEREST_NDNSIM)
     {
-      type = HeaderHelper::INTEREST_NDNSIM;
-      NS_LOG_DEBUG ("Schedule low-priority Interest with ");
+      m_type = HeaderHelper::INTEREST_NDNSIM;
+      NS_LOG_DEBUG ("Schedule low-priority Interest");
     }
   else if (guessedType == HeaderHelper::CONTENT_OBJECT_CCNB ||
            guessedType == HeaderHelper::CONTENT_OBJECT_NDNSIM)
     {
-      type = HeaderHelper::CONTENT_OBJECT_NDNSIM;
-      NS_LOG_DEBUG ("Schedule low-priority ContentObject with ");
+      m_type = HeaderHelper::CONTENT_OBJECT_NDNSIM;
+      NS_LOG_DEBUG ("Schedule low-priority ContentObject");
     }
   else
     {
-      NS_FATAL_ERROR ("Unknown CCNX header type");
+      NS_FATAL_ERROR ("Unknown NDN header type");
     }
 }
 
 V2vNetDeviceFace::Item::Item (const Item &item)
-  : gap (item.gap), packet (item.packet), type (item.type), name (item.name), retxCount (item.retxCount)
+  : m_gap (item.m_gap), m_packet (item.m_packet), m_type (item.m_type), m_name (item.m_name), m_retxCount (item.m_retxCount)
 {
 }
 
@@ -199,16 +202,16 @@ V2vNetDeviceFace::Item::operator ++ ()
 {
   // remote GeoTag when packet is scheduled for retransmission
   GeoTransmissionTag tag;
-  packet->RemovePacketTag (tag);
+  m_packet->RemovePacketTag (tag);
 
-  retxCount ++;
+  m_retxCount ++;
   return *this;
 }
 
 V2vNetDeviceFace::Item &
 V2vNetDeviceFace::Item::Gap (const Time &time)
 {
-  gap = time;
+  m_gap = time;
   return *this;
 }
 
@@ -257,23 +260,21 @@ V2vNetDeviceFace::SendLowPriority (Ptr<Packet> packet)
       distance = std::min (m_maxDistance, distance);
     }
 
-  // NS_LOG_DEBUG ("Distance: " << distance);
+
+  //////////////////////////////////
+  //////////////////////////////////
 
   // Mean waiting time.  Reversely proportional to the distance from the original transmitter
   // Closer guys will tend to wait longer than guys far away
   double meanWaiting = m_maxWaitLowPriority.ToDouble (Time::S) * (m_maxDistance - distance) / m_maxDistance;
-  // NS_LOG_DEBUG ("Mean waiting: " << meanWaiting);
 
-  // TriangularVariable randomLowPriority = TriangularVariable (0, m_maxWaitLowPriority.ToDouble (Time::S), (meanWaiting+m_maxWaitLowPriority.ToDouble (Time::S))/3.0);
-
-  // NormalVariable randomLowPriority = NormalVariable (meanWaiting, /* mean */
-  //                                                    m_maxWaitPeriod.ToDouble (Time::S) * m_maxWaitPeriod.ToDouble (Time::S), /*variance*/
-  //                                                    meanWaiting + m_maxWaitPeriod.ToDouble (Time::S)/*bound*/);
+  //////////////////////////////////
+  //////////////////////////////////
 
   UniformVariable randomLowPriority (meanWaiting, meanWaiting + m_maxWaitPeriod.ToDouble (Time::S));
 
   double sample = std::abs (randomLowPriority.GetValue ());
-  NS_LOG_DEBUG ("Sample: " << sample);
+  // NS_LOG_DEBUG ("Sample: " << sample);
 
   m_waitingTimeVsDistanceTrace (distance, sample);
 
@@ -281,7 +282,7 @@ V2vNetDeviceFace::SendLowPriority (Ptr<Packet> packet)
   m_lowPriorityQueue.push_back (Item (Seconds (sample), packet));
 
   if (!m_scheduledSend.IsRunning ())
-    m_scheduledSend = Simulator::Schedule (m_lowPriorityQueue.front ().gap, &V2vNetDeviceFace::SendFromQueue, this);
+    m_scheduledSend = Simulator::Schedule (m_lowPriorityQueue.front ().m_gap, &V2vNetDeviceFace::SendFromQueue, this);
 }
 
 bool
@@ -314,7 +315,7 @@ V2vNetDeviceFace::SendImpl (Ptr<Packet> packet)
       m_totalWaitPeriod += gap;
 
       if (!m_scheduledSend.IsRunning ())
-        m_scheduledSend = Simulator::Schedule (m_queue.front ().gap, &V2vNetDeviceFace::SendFromQueue, this);
+        m_scheduledSend = Simulator::Schedule (m_queue.front ().m_gap, &V2vNetDeviceFace::SendFromQueue, this);
 
       return true;
     }
@@ -348,7 +349,7 @@ V2vNetDeviceFace::NotifyJumpDistanceTrace (Ptr<const Packet> packet)
 void
 V2vNetDeviceFace::SendFromQueue ()
 {
-  NS_LOG_FUNCTION (this);
+  // NS_LOG_FUNCTION (this);
 
   NS_ASSERT ((m_queue.size () + m_lowPriorityQueue.size ()) > 0);
 
@@ -365,14 +366,14 @@ V2vNetDeviceFace::SendFromQueue ()
       Item &item = m_queue.front ();
 
       //////////////////////////////
-      NetDeviceFace::SendImpl (item.packet->Copy ());
-      m_tx (m_node, item.packet, mobility->GetPosition ());
+      TagAndNetDeviceSendImpl (item.m_packet->Copy ());
+      m_tx (m_node, item.m_packet, mobility->GetPosition ());
       //////////////////////////////
 
-      if (item.retxCount < m_maxRetxAttempts)
+      if (item.m_retxCount < m_maxRetxAttempts)
         m_retxQueue.push_back (++(item.Gap (m_maxWaitRetransmission)));
 
-      m_totalWaitPeriod -= item.gap;
+      m_totalWaitPeriod -= item.m_gap;
       m_queue.pop_front ();
     }
   else if (m_lowPriorityQueue.size () > 0) // no reason for this check, just for readability
@@ -380,26 +381,43 @@ V2vNetDeviceFace::SendFromQueue ()
       Item &item = m_lowPriorityQueue.front ();
 
       //////////////////////////////
-      NetDeviceFace::SendImpl (item.packet->Copy ());
-      m_tx (m_node, item.packet, mobility->GetPosition ());
+      TagAndNetDeviceSendImpl (item.m_packet->Copy ());
+      m_tx (m_node, item.m_packet, mobility->GetPosition ());
       //////////////////////////////
 
-      if (item.retxCount < m_maxRetxAttempts)
+      if (item.m_retxCount < m_maxRetxAttempts)
         m_retxQueue.push_back (++(item.Gap (m_maxWaitRetransmission)));
 
       m_lowPriorityQueue.pop_front ();
     }
 
   if (m_queue.size () > 0)
-    m_scheduledSend = Simulator::Schedule (m_queue.front ().gap, &V2vNetDeviceFace::SendFromQueue, this);
+    m_scheduledSend = Simulator::Schedule (m_queue.front ().m_gap, &V2vNetDeviceFace::SendFromQueue, this);
   else if (m_lowPriorityQueue.size () > 0)
-    m_scheduledSend = Simulator::Schedule (m_lowPriorityQueue.front ().gap, &V2vNetDeviceFace::SendFromQueue, this);
+    m_scheduledSend = Simulator::Schedule (m_lowPriorityQueue.front ().m_gap, &V2vNetDeviceFace::SendFromQueue, this);
 
   if (!m_retxEvent.IsRunning () && m_retxQueue.size () > 0)
     {
-      m_retxEvent = Simulator::Schedule (m_retxQueue.front ().gap, &V2vNetDeviceFace::ProcessRetx, this);
+      m_retxEvent = Simulator::Schedule (m_retxQueue.front ().m_gap, &V2vNetDeviceFace::ProcessRetx, this);
     }
 }
+
+void
+V2vNetDeviceFace::TagAndNetDeviceSendImpl (Ptr<Packet> packet)
+{
+  Ptr<MobilityModel> mobility = m_node->GetObject<MobilityModel> ();
+  if (mobility != 0)
+    {
+      GeoTransmissionTag tag;
+      packet->RemovePacketTag (tag);
+
+      tag.SetPosition (mobility->GetPosition ());
+      packet->AddPacketTag (tag);
+    }
+
+  NetDeviceFace::SendImpl (packet);
+}
+
 
 void
 V2vNetDeviceFace::ProcessRetx ()
@@ -408,18 +426,30 @@ V2vNetDeviceFace::ProcessRetx ()
   NS_ASSERT (m_retxQueue.size () > 0);
 
   Time gap = GetPriorityQueueGap ();
-  Item item (gap, m_retxQueue.front ().packet);
-  item.retxCount = m_retxQueue.front ().retxCount;
+  Item item (gap, m_retxQueue.front ().m_packet);
+  item.m_retxCount = m_retxQueue.front ().m_retxCount;
   m_lowPriorityQueue.push_back (item);
 
   m_retxQueue.pop_front ();
 
   if (!m_scheduledSend.IsRunning ())
-    m_scheduledSend = Simulator::Schedule (m_lowPriorityQueue.front ().gap, &V2vNetDeviceFace::SendFromQueue, this);
+    m_scheduledSend = Simulator::Schedule (m_lowPriorityQueue.front ().m_gap, &V2vNetDeviceFace::SendFromQueue, this);
 
   if (m_retxQueue.size () > 0)
-    m_retxEvent = Simulator::Schedule (m_retxQueue.front ().gap, &V2vNetDeviceFace::ProcessRetx, this);
+    m_retxEvent = Simulator::Schedule (m_retxQueue.front ().m_gap, &V2vNetDeviceFace::ProcessRetx, this);
 }
+
+void
+V2vNetDeviceFace::RegisterProtocolHandler (ProtocolHandler handler)
+{
+  NS_LOG_FUNCTION (this);
+
+  Face::RegisterProtocolHandler (handler);
+
+  m_node->RegisterProtocolHandler (MakeCallback (&V2vNetDeviceFace::ReceiveFromNetDevice, this),
+                                   L3Protocol::ETHERNET_FRAME_TYPE, GetNetDevice (), true/*promiscuous mode*/);
+}
+
 
 // callback
 void
@@ -430,7 +460,7 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
                                         const Address &,
                                         NetDevice::PacketType)
 {
-  NS_LOG_FUNCTION (this << p);
+  // NS_LOG_FUNCTION (this << p);
 
   HeaderHelper::Type packetType = HeaderHelper::GetNdnHeaderType (p);
   if (packetType == HeaderHelper::INTEREST_CCNB ||
@@ -449,6 +479,7 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
     }
 
   Ptr<const Name> name = HeaderHelper::GetName (p); // not efficient (extra deserialization), but it is the only way for now
+  NS_ASSERT (name != 0);
 
   GeoSrcTag srcTag;
   GeoTransmissionTag transmissionTag;
@@ -458,10 +489,13 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
 
   Ptr<MobilityModel> mobility = m_node->GetObject<MobilityModel> ();
 
+  NS_LOG_DEBUG ("SANITY CHECK: " << isSrcTag << ", " << isTransmissionTag << ", " << mobility);
+
   //   src  -----   <transmission>  ---- <mobility>
   bool needToCancel = true;
   if (mobility && isSrcTag && isTransmissionTag)
     {
+      NS_LOG_DEBUG ("Check distances:" << CalculateDistance (srcTag.GetPosition (), transmissionTag.GetPosition ()) << " <? " << CalculateDistance (srcTag.GetPosition (), mobility->GetPosition ()));
       if (CalculateDistance (srcTag.GetPosition (), transmissionTag.GetPosition ())
           <
           CalculateDistance (srcTag.GetPosition (), mobility->GetPosition ()))
@@ -474,22 +508,24 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
   ItemQueue::iterator item = m_lowPriorityQueue.begin ();
   while (item != m_lowPriorityQueue.end ())
     {
-      if ((packetType==HeaderHelper::CONTENT_OBJECT_NDNSIM || item->type == packetType) && *item->name == *name)
+      NS_ASSERT (item->m_name != 0);
+
+      if ((packetType==HeaderHelper::CONTENT_OBJECT_NDNSIM || item->m_type == packetType) && *item->m_name == *name)
         {
-          cancelled = item->type == packetType;
+          cancelled = item->m_type == packetType;
 
           if (needToCancel)
             {
               ItemQueue::iterator tmp = item;
               tmp ++;
 
-              NS_LOG_INFO ("Canceling ContentObject with name " << *name << ", which is scheduled for low-priority transmission");
-              m_cancelling (m_node, item->packet);
+              NS_LOG_INFO ("Canceling ContentObject with name " << name->GetLastComponent () << ", which is scheduled for low-priority transmission");
+              m_cancelling (m_node, item->m_packet);
 
               m_lowPriorityQueue.erase (item);
               if (m_queue.size () + m_lowPriorityQueue.size () == 0)
                 {
-                  m_scheduledSend.Cancel ();
+                  Simulator::Remove (m_scheduledSend);
                 }
 
               item = tmp;
@@ -506,23 +542,25 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
   item = m_queue.begin ();
   while (item != m_queue.end ())
     {
-      if ((packetType==HeaderHelper::CONTENT_OBJECT_NDNSIM || item->type == packetType) && *item->name == *name)
+      NS_ASSERT (item->m_name != 0);
+
+      if ((packetType==HeaderHelper::CONTENT_OBJECT_NDNSIM || item->m_type == packetType) && *item->m_name == *name)
         {
-          cancelled = item->type == packetType;
+          cancelled = item->m_type == packetType;
 
           if (needToCancel)
             {
               ItemQueue::iterator tmp = item;
               tmp ++;
 
-              NS_LOG_INFO ("Canceling ContentObject with name " << *name << ", which is scheduled for transmission");
-              m_cancelling (m_node, item->packet);
+              NS_LOG_INFO ("Canceling ContentObject with name " << name->GetLastComponent () << ", which is scheduled for transmission");
+              m_cancelling (m_node, item->m_packet);
 
-              m_totalWaitPeriod -= item->gap;
+              m_totalWaitPeriod -= item->m_gap;
               m_queue.erase (item);
               if (m_queue.size () == 0)
                 {
-                  m_scheduledSend.Cancel ();
+                  Simulator::Remove (m_scheduledSend);
                 }
 
               item = tmp;
@@ -537,22 +575,24 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
   item = m_retxQueue.begin ();
   while (item != m_retxQueue.end ())
     {
-      if ((packetType==HeaderHelper::CONTENT_OBJECT_NDNSIM || item->type == packetType) && *item->name == *name)
+      NS_ASSERT (item->m_name != 0);
+
+      if ((packetType==HeaderHelper::CONTENT_OBJECT_NDNSIM || item->m_type == packetType) && *item->m_name == *name)
         {
-          cancelled = item->type == packetType;
+          cancelled = item->m_type == packetType;
           if (needToCancel)
             {
               ItemQueue::iterator tmp = item;
               tmp ++;
 
-              NS_LOG_INFO ("Canceling ContentObject with name " << *name << ", which is planned for retransmission");
-              m_cancelling (m_node, item->packet);
+              NS_LOG_INFO ("Canceling ContentObject with name " << name->GetLastComponent () << ", which is planned for retransmission");
+              m_cancelling (m_node, item->m_packet);
 
               m_retxQueue.erase (item);
               if (m_retxQueue.size () == 0)
                 {
                   NS_LOG_INFO ("Canceling the retx processing event");
-                  m_retxEvent.Cancel ();
+                  Simulator::Remove (m_retxEvent);
                 }
 
               item = tmp;
@@ -570,6 +610,7 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
         {
           NS_LOG_DEBUG ("Ignoring cancellation from a backwards node");
         }
+      NS_LOG_DEBUG ("Cancelled");
       return;
     }
   else{

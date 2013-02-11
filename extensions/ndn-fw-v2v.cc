@@ -20,6 +20,7 @@
 
 #include "ndn-fw-v2v.h"
 #include "ndn-v2v-net-device-face.h"
+#include "geo-tag.h"
 
 #include <ns3/ndnSIM/utils/ndn-fw-hop-count-tag.h>
 
@@ -33,6 +34,8 @@
 #include <ns3/ndn-interest.h>
 #include <ns3/ndn-content-object.h>
 #include <ns3/ndn-content-store.h>
+#include <ns3/ndn-app-face.h>
+#include <ns3/mobility-model.h>
 
 #include <boost/foreach.hpp>
 
@@ -64,6 +67,51 @@ V2v::~V2v ()
 {
 }
 
+void
+V2v::OnInterest (Ptr<Face> face,
+                 Ptr<const InterestHeader> header,
+                 Ptr<const Packet> origPacket)
+{
+  if (DynamicCast<AppFace> (face))
+    {
+      Ptr<MobilityModel> model = GetObject<MobilityModel> ();
+      Vector position;
+      if (model)
+        {
+          position = model->GetPosition ();
+          GeoSrcTag tag;
+          tag.SetPosition (position);
+          origPacket->AddPacketTag (tag);
+        }
+    }
+
+  ForwardingStrategy::OnInterest (face, header, origPacket);
+}
+
+void
+V2v::OnData (Ptr<Face> face,
+             Ptr<const ContentObjectHeader> header,
+             Ptr<Packet> payload,
+             Ptr<const Packet> origPacket)
+{
+  if (DynamicCast<AppFace> (face))
+    {
+      Ptr<MobilityModel> model = GetObject<MobilityModel> ();
+      Vector position;
+      if (model)
+        {
+          position = model->GetPosition ();
+          GeoSrcTag tag;
+          tag.SetPosition (position);
+          origPacket->AddPacketTag (tag);
+          // payload->AddPacketTag (tag);
+        }
+    }
+
+  ForwardingStrategy::OnData (face, header, payload, origPacket);
+}
+
+
 bool
 V2v::DoPropagateInterest (Ptr<Face> inFace,
                           Ptr<const InterestHeader> header,
@@ -92,35 +140,51 @@ V2v::DoPropagateInterest (Ptr<Face> inFace,
   return propagatedCount > 0;
 }
 
+void
+V2v::DidReceiveSolicitedData (Ptr<Face> inFace,
+                              Ptr<const ContentObjectHeader> header,
+                              Ptr<const Packet> payload,
+                              Ptr<const Packet> origPacket,
+                              bool didCreateCacheEntry)
+{
+  ForwardingStrategy::DidReceiveSolicitedData (inFace, header, payload, origPacket, didCreateCacheEntry);
+
+  if (didCreateCacheEntry)
+    {
+      // initiate low priority "pushing" only for "new data packets"
+
+      Ptr<L3Protocol> l3 = this->GetObject<L3Protocol> ();
+      NS_ASSERT (l3 != 0);
+
+      // Push interest using low-priority send method
+      for (uint32_t faceId = 0; faceId < l3->GetNFaces (); faceId++)
+        {
+          TrySendLowPriority (l3->GetFace (faceId), origPacket);
+        }
+    }
+}
 
 void
 V2v::DidReceiveUnsolicitedData (Ptr<Face> inFace,
                                 Ptr<const ContentObjectHeader> header,
                                 Ptr<const Packet> payload,
-                                Ptr<const Packet> origPacket)
+                                Ptr<const Packet> origPacket,
+                                bool didCreateCacheEntry)
 {
-  FwHopCountTag hopCountTag;
+  ForwardingStrategy::DidReceiveUnsolicitedData (inFace, header, payload, origPacket, didCreateCacheEntry);
 
-  Ptr<Packet> payloadCopy = payload->Copy ();
-  payloadCopy->RemovePacketTag (hopCountTag);
-
-  // Add or update entry in the content store
-  bool newEntry = m_contentStore->Add (header, payloadCopy);
-
-  if (!newEntry)
+  if (didCreateCacheEntry)
     {
-      NS_LOG_DEBUG ("ContentObject is already in cache. Don't start low-priority processing");
-      // stop processing if data was already in cache
-      return;
-    }
+      // initiate low priority "pushing" only for "new data packets"
 
-  Ptr<L3Protocol> l3 = this->GetObject<L3Protocol> ();
-  NS_ASSERT (l3 != 0);
+      Ptr<L3Protocol> l3 = this->GetObject<L3Protocol> ();
+      NS_ASSERT (l3 != 0);
 
-  // Push interest using low-priority send method
-  for (uint32_t faceId = 0; faceId < l3->GetNFaces (); faceId++)
-    {
-      TrySendLowPriority (l3->GetFace (faceId), origPacket);
+      // Push interest using low-priority send method
+      for (uint32_t faceId = 0; faceId < l3->GetNFaces (); faceId++)
+        {
+          TrySendLowPriority (l3->GetFace (faceId), origPacket);
+        }
     }
 }
 
@@ -130,8 +194,6 @@ V2v::DidExhaustForwardingOptions (Ptr<Face> inFace,
                                   Ptr<const Packet> origPacket,
                                   Ptr<pit::Entry> pitEntry)
 {
-  // not sure if outgoing faces should be removed or not... could cause the trouble
-
   ForwardingStrategy::DidExhaustForwardingOptions (inFace, header, origPacket, pitEntry);
 
   // Try to push new packet further with lowest priority possible on all L3 faces
@@ -144,6 +206,8 @@ V2v::DidExhaustForwardingOptions (Ptr<Face> inFace,
 void
 V2v::TrySendLowPriority (Ptr<Face> face, Ptr<const Packet> packet)
 {
+  NS_LOG_FUNCTION (boost::cref (*face));
+
   Ptr<V2vNetDeviceFace> v2vFace = DynamicCast<V2vNetDeviceFace> (face);
   if (v2vFace)
     {

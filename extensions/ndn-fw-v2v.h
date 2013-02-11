@@ -42,26 +42,46 @@ public:
   V2v();
   virtual ~V2v ();
 
+  // from ForwardingStrategy
+  virtual void
+  OnInterest (Ptr<Face> face,
+              Ptr<const InterestHeader> header,
+              Ptr<const Packet> origPacket);
+
+  virtual void
+  OnData (Ptr<Face> face,
+          Ptr<const ContentObjectHeader> header,
+          Ptr<Packet> payload,
+          Ptr<const Packet> origPacket);
+
 protected:
   // from ForwardingStrategy
-  bool
+  virtual bool
   DoPropagateInterest (Ptr<Face> inFace,
                        Ptr<const InterestHeader> header,
                        Ptr<const Packet> origPacket,
                        Ptr<pit::Entry> pitEntry);
 
 
-  void
+  virtual void
   DidExhaustForwardingOptions (Ptr<Face> inFace,
                                Ptr<const InterestHeader> header,
                                Ptr<const Packet> origPacket,
                                Ptr<pit::Entry> pitEntry);
 
-  void
+  virtual void
+  DidReceiveSolicitedData (Ptr<Face> inFace,
+                           Ptr<const ContentObjectHeader> header,
+                           Ptr<const Packet> payload,
+                           Ptr<const Packet> origPacket,
+                           bool didCreateCacheEntry);
+
+  virtual void
   DidReceiveUnsolicitedData (Ptr<Face> inFace,
                              Ptr<const ContentObjectHeader> header,
                              Ptr<const Packet> payload,
-                             Ptr<const Packet> origPacket);
+                             Ptr<const Packet> origPacket,
+                             bool didCreateCacheEntry);
 private:
   void
   TrySendLowPriority (Ptr<Face> face, Ptr<const Packet> packet);

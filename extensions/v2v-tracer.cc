@@ -29,6 +29,9 @@
 #include "ns3/node-list.h"
 #include "ns3/names.h"
 
+#include "ns3/ndn-l3-protocol.h"
+#include "ns3/ndn-content-store.h"
+#include "ns3/ndn-forwarding-strategy.h"
 #include "ns3/ndn-app.h"
 #include "ns3/ndn-face.h"
 #include "ns3/ndn-interest.h"
@@ -89,6 +92,7 @@ V2vTracer::PrintHeader (std::ostream &os) const
 }
 
 V2vTracer::V2vTracer (boost::shared_ptr<std::ostream> os, Ptr<Node> node)
+: m_nodePtr (node)
 {
   m_node = boost::lexical_cast<string> (m_nodePtr->GetId ());
 
@@ -104,20 +108,25 @@ V2vTracer::V2vTracer (boost::shared_ptr<std::ostream> os, Ptr<Node> node)
 void
 V2vTracer::Connect ()
 {
-  Config::ConnectWithoutContext ("/NodeList/"+m_node+"/$ns3::ndn::ContentStore/DidAddEntry", MakeCallback (&V2vTracer::DidAddEntry, this));
+  m_nodePtr->GetObject<ContentStore> ()->TraceConnectWithoutContext ("DidAddEntry", MakeCallback (&V2vTracer::DidAddEntry, this));
 
-  Config::Connect ("/NodeList/"+m_node+"/$ns3::CcnxL3Protocol/InInterests", MakeCallback (&V2vTracer::InInterest, this));
+  m_nodePtr->GetObject<ForwardingStrategy> ()->TraceConnectWithoutContext ("InInterests", MakeCallback (&V2vTracer::InInterest, this));
+
+
+  Ptr<L3Protocol> ndn = m_nodePtr->GetObject<L3Protocol> ();
+  for (uint32_t faceId = 0; faceId < ndn->GetNFaces (); faceId++)
+    {
+      ndn->GetFace (faceId)->TraceConnectWithoutContext ("Canceling", MakeCallback (&V2vTracer::Canceling, this));
+    }
+
   Config::Connect ("/NodeList/"+m_node+"/DeviceList/*/$ns3::WifiNetDevice/Phy/PhyTxBegin", MakeCallback (&V2vTracer::PhyOutData, this));
-
-  Config::Connect ("/NodeList/"+m_node+"/$ns3::CcnxL3Protocol/FaceList/*/$ns3::ndn::V2vNetDeviceFace/Canceling",
-                   MakeCallback (&V2vTracer::Canceling, this));
 }
 
 void
 V2vTracer::DidAddEntry (Ptr<cs::Entry> csEntry)
 {
   *m_os << Simulator::Now ().ToDouble (Time::S) << "\t"
-       << "FIXME" << "\t" << "DataCached" << "\t" << csEntry->GetName ().GetLastComponent () << "\n";
+       << m_node << "\t" << "DataCached" << "\t" << csEntry->GetName ().GetLastComponent () << "\n";
 }
 
 
@@ -125,14 +134,14 @@ void
 V2vTracer::InInterest (std::string context, Ptr<const InterestHeader> header, Ptr<const Face> face)
 {
   *m_os << Simulator::Now ().ToDouble (Time::S) << "\t"
-       << "FIXME" << "\t" << "Incoming interest" << "\t" << header->GetName ().GetLastComponent () << "\n";
+       << m_node << "\t" << "Incoming interest" << "\t" << header->GetName ().GetLastComponent () << "\n";
 }
 
 void
 V2vTracer::PhyOutData (std::string context,  Ptr<const Packet> packet)
 {
   *m_os << Simulator::Now ().ToDouble (Time::S) << "\t"
-       << "FIXME" << "\t" << "Broadcasting" << "\t" << *packet/*->PeekPacketTag<CcnxNameComponentsTag> ()->GetName ()->GetLastComponent ()*/ << "\n";
+       << m_node << "\t" << "Broadcasting" << "\t" << *packet/*->PeekPacketTag<CcnxNameComponentsTag> ()->GetName ()->GetLastComponent ()*/ << "\n";
 }
 
 void
@@ -140,7 +149,7 @@ V2vTracer::Canceling (Ptr<Node> node, Ptr<const Packet> packet)
 {
   // NS_LOG_INFO( "Dropping packet due to noise or error model calculation." );
   *m_os << Simulator::Now ().ToDouble (Time::S) << "\t"
-       << "FIXME" << "\t" << "Canceling transmission" << "\t" << *packet/*->PeekPacketTag<CcnxNameComponentsTag> ()->GetName ()->GetLastComponent ()*/ << "\n";
+       << m_node << "\t" << "Canceling transmission" << "\t" << *packet/*->PeekPacketTag<CcnxNameComponentsTag> ()->GetName ()->GetLastComponent ()*/ << "\n";
 }
 
 } // namespace ndn

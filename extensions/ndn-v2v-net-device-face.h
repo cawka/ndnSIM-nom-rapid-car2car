@@ -36,7 +36,7 @@ typedef Vector3D Vector;
 
 namespace ndn {
 
-class NameComponents;
+class Name;
 
 /**
  * \ingroup ndn-face
@@ -73,6 +73,9 @@ public:
   // from CcnxFace
   virtual void
   SendLowPriority (Ptr<Packet> p);
+
+  virtual void
+  RegisterProtocolHandler (ProtocolHandler handler);
 
 protected:
   // from ndn::NetDeviceFace
@@ -120,6 +123,9 @@ private:
   void
   NotifyJumpDistanceTrace (const Ptr<const Packet> packet);
 
+  void
+  TagAndNetDeviceSendImpl (Ptr<Packet> packet);
+
 private:
   struct Item
   {
@@ -132,11 +138,11 @@ private:
     Item &
     Gap (const Time &time);
 
-    Time gap;
-    Ptr<Packet> packet;
-    HeaderHelper::Type type;
-    Ptr<const NameComponents> name;
-    uint32_t retxCount;
+    Time m_gap;
+    Ptr<Packet> m_packet;
+    HeaderHelper::Type m_type;
+    Ptr<const Name> m_name;
+    uint32_t m_retxCount;
   };
   typedef std::list<Item> ItemQueue;
 

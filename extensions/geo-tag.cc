@@ -69,7 +69,7 @@ GeoTag::GetPosition () const
 uint32_t
 GeoTag::GetSerializedSize() const
 {
-  return 3 * sizeof (double);
+  return 2 * sizeof (double);
 }
 
 void
@@ -77,7 +77,7 @@ GeoTag::Serialize(TagBuffer i) const
 {
   i.WriteDouble (m_position.x);
   i.WriteDouble (m_position.y);
-  i.WriteDouble (m_position.z);
+  // i.WriteDouble (m_position.z);
 }
 
 void
@@ -85,7 +85,7 @@ GeoTag::Deserialize(ns3::TagBuffer i)
 {
   m_position.x = i.ReadDouble ();
   m_position.y = i.ReadDouble ();
-  m_position.z = i.ReadDouble ();
+  // m_position.z = i.ReadDouble ();
 }
 
 void
