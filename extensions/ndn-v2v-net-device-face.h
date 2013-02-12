@@ -121,7 +121,10 @@ private:
   GetPriorityQueueGap () const;
 
   void
-  NotifyJumpDistanceTrace (const Ptr<const Packet> packet);
+  NotifyJumpDistanceInterestTrace (const Ptr<const Packet> packet);
+
+  void
+  NotifyJumpDistanceDataTrace (const Ptr<const Packet> packet);
 
   void
   TagAndNetDeviceSendImpl (Ptr<Packet> packet);
@@ -166,10 +169,17 @@ private:
   ItemQueue m_retxQueue;
   uint32_t m_maxRetxAttempts;
 
-  TracedCallback<double, double> m_waitingTimeVsDistanceTrace;
-  TracedCallback<Ptr<const Node>, double> m_jumpDistanceTrace;
-  TracedCallback<Ptr<Node>, Ptr<const Packet>, const Vector&> m_tx;
-  TracedCallback<Ptr<Node>, Ptr<const Packet> > m_cancelling;
+  TracedCallback<double, double> m_waitingTimeVsDistanceDataTrace;
+  TracedCallback<double, double> m_waitingTimeVsDistanceInterestTrace;
+
+  TracedCallback<Ptr<const Node>, double> m_jumpDistanceDataTrace;
+  TracedCallback<Ptr<const Node>, double> m_jumpDistanceInterestTrace;
+
+  TracedCallback<Ptr<Node>, Ptr<const Packet>, const Vector&> m_txData;
+  TracedCallback<Ptr<Node>, Ptr<const Packet>, const Vector&> m_txInterest;
+
+  TracedCallback<Ptr<Node>, Ptr<const Packet> > m_cancellingData;
+  TracedCallback<Ptr<Node>, Ptr<const Packet> > m_cancellingInterest;
 };
 
 } // namespace ndn

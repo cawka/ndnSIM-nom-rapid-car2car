@@ -31,13 +31,3 @@ if (!file.exists ("graphs/pdfs")) {
 pdf (output, width=5, height=3)
 g
 x= dev.off ()
-
-
-
-  ## geom_ribbon (aes(x=Density, group = DensityFactor), colour='red', stat="boxplot") +
-  ## geom_smooth (level=0.98) +
-  ## geom_boxplot () +
-  ## geom_point (colour="red") +
-  ## geom_errorbar (aes(ymax = Speed + Interval, ymin=Speed - Interval), width=1) +
-  ## geom_line () +
-  ## geom_ribbon (aes(ymax = Mean + Interval, ymin=Mean - Interval)) +

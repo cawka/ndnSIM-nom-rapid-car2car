@@ -67,7 +67,7 @@ main (int argc, char *argv[])
 
   // !!! very important parameter !!!
   // Should keep PIT entry to prevent duplicate interests from re-propagating
-  Config::SetDefault ("ns3::ndn::Pit::PitEntryPruningTimout", StringValue ("1s"));
+  Config::SetDefault ("ns3::ndn::Pit::PitEntryPruningTimout", StringValue ("10s"));
 
   CommandLine cmd;
 

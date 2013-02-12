@@ -5,7 +5,7 @@ suppressMessages (library(ggplot2))
 
 source ("graphs/graph-style.R")
 
-input = "results/car-relay-jump-distance.txt.bz2"
+input = "results/figure-3-data-propagation-vs-time/car-relay-jump-distance.txt.bz2"
 output = "graphs/pdfs/figure-3-data-propagation-vs-time.pdf"
 
 data <- read.table (bzfile(input, "r"), header=TRUE)
@@ -13,7 +13,6 @@ data$Run = as.factor(data$Run)
 data$DistanceFromSource = data$NodeId * data$Distance
 
 data = subset(data, Distance %in% c(10, 50, 90, 130, 170))
-
 data$Distance = as.factor(data$Distance)
 
 

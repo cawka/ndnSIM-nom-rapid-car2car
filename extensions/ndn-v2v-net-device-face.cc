@@ -73,14 +73,25 @@ V2vNetDeviceFace::GetTypeId ()
                    MakeUintegerAccessor (&V2vNetDeviceFace::m_maxRetxAttempts),
                    MakeUintegerChecker<uint32_t> ())
 
-    .AddTraceSource ("WaitingTimeVsDistanceTrace", "On every low-priority packet trace the waiting gap and distance",
-                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_waitingTimeVsDistanceTrace))
-    .AddTraceSource ("JumpDistance", "Fired just before packet is actually transmitted if GeoTag is present and distance is more than 0",
-                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_jumpDistanceTrace))
-    .AddTraceSource ("Tx", "Fired every time packet is send out of face",
-                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_tx))
-    .AddTraceSource ("Canceling", "Fired every time transmission is cancelled",
-                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_cancelling))
+    .AddTraceSource ("WaitingTimeVsDistanceDataTrace", "On every low-priority packet trace the waiting gap and distance",
+                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_waitingTimeVsDistanceDataTrace))
+    .AddTraceSource ("WaitingTimeVsDistanceInterestTrace", "On every low-priority packet trace the waiting gap and distance",
+                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_waitingTimeVsDistanceInterestTrace))
+
+    .AddTraceSource ("JumpDistanceData", "Fired just before packet is actually transmitted if GeoTag is present and distance is more than 0",
+                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_jumpDistanceDataTrace))
+    .AddTraceSource ("JumpDistanceInterest", "Fired just before packet is actually transmitted if GeoTag is present and distance is more than 0",
+                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_jumpDistanceInterestTrace))
+
+    .AddTraceSource ("TxData", "Fired every time packet is send out of face",
+                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_txData))
+    .AddTraceSource ("TxInterest", "Fired every time packet is send out of face",
+                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_txInterest))
+
+    .AddTraceSource ("CancelingData", "Fired every time transmission is cancelled",
+                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_cancellingData))
+    .AddTraceSource ("CancelingInterest", "Fired every time transmission is cancelled",
+                     MakeTraceSourceAccessor (&V2vNetDeviceFace::m_cancellingInterest))
     ;
   return tid;
 }
@@ -276,10 +287,18 @@ V2vNetDeviceFace::SendLowPriority (Ptr<Packet> packet)
   double sample = std::abs (randomLowPriority.GetValue ());
   // NS_LOG_DEBUG ("Sample: " << sample);
 
-  m_waitingTimeVsDistanceTrace (distance, sample);
+  Item queueItem (Seconds (sample), packet);
+  if (queueItem.m_type == HeaderHelper::INTEREST_NDNSIM)
+    {
+      m_waitingTimeVsDistanceInterestTrace (distance, sample);
+    }
+  else
+    {
+      m_waitingTimeVsDistanceDataTrace (distance, sample);
+    }
 
   // Actual gap will be defined by Triangular distribution based on Geo metric + Uniform distribution that is aimed to avoid collisions
-  m_lowPriorityQueue.push_back (Item (Seconds (sample), packet));
+  m_lowPriorityQueue.push_back (queueItem);
 
   if (!m_scheduledSend.IsRunning ())
     m_scheduledSend = Simulator::Schedule (m_lowPriorityQueue.front ().m_gap, &V2vNetDeviceFace::SendFromQueue, this);
@@ -327,7 +346,7 @@ V2vNetDeviceFace::SendImpl (Ptr<Packet> packet)
 }
 
 void
-V2vNetDeviceFace::NotifyJumpDistanceTrace (Ptr<const Packet> packet)
+V2vNetDeviceFace::NotifyJumpDistanceInterestTrace (Ptr<const Packet> packet)
 {
   Ptr<MobilityModel> mobility = m_node->GetObject<MobilityModel> ();
   if (mobility == 0)
@@ -343,7 +362,27 @@ V2vNetDeviceFace::NotifyJumpDistanceTrace (Ptr<const Packet> packet)
 
   double distance = CalculateDistance (tag.GetPosition (), mobility->GetPosition ());
 
-  m_jumpDistanceTrace (m_node, distance);
+  m_jumpDistanceInterestTrace (m_node, distance);
+}
+
+void
+V2vNetDeviceFace::NotifyJumpDistanceDataTrace (Ptr<const Packet> packet)
+{
+  Ptr<MobilityModel> mobility = m_node->GetObject<MobilityModel> ();
+  if (mobility == 0)
+    {
+      NS_FATAL_ERROR ("Mobility model has to be installed on the node");
+      return;
+    }
+
+  GeoTransmissionTag tag;
+  bool isTag = packet->PeekPacketTag (tag);
+
+  if (!isTag) return;
+
+  double distance = CalculateDistance (tag.GetPosition (), mobility->GetPosition ());
+
+  m_jumpDistanceDataTrace (m_node, distance);
 }
 
 void
@@ -367,7 +406,14 @@ V2vNetDeviceFace::SendFromQueue ()
 
       //////////////////////////////
       TagAndNetDeviceSendImpl (item.m_packet->Copy ());
-      m_tx (m_node, item.m_packet, mobility->GetPosition ());
+      if (item.m_type == HeaderHelper::INTEREST_NDNSIM)
+        {
+          m_txInterest (m_node, item.m_packet, mobility->GetPosition ());
+        }
+      else
+        {
+          m_txData (m_node, item.m_packet, mobility->GetPosition ());
+        }
       //////////////////////////////
 
       if (item.m_retxCount < m_maxRetxAttempts)
@@ -382,7 +428,14 @@ V2vNetDeviceFace::SendFromQueue ()
 
       //////////////////////////////
       TagAndNetDeviceSendImpl (item.m_packet->Copy ());
-      m_tx (m_node, item.m_packet, mobility->GetPosition ());
+      if (item.m_type == HeaderHelper::INTEREST_NDNSIM)
+        {
+          m_txInterest (m_node, item.m_packet, mobility->GetPosition ());
+        }
+      else
+        {
+          m_txData (m_node, item.m_packet, mobility->GetPosition ());
+        }
       //////////////////////////////
 
       if (item.m_retxCount < m_maxRetxAttempts)
@@ -520,7 +573,7 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
               tmp ++;
 
               NS_LOG_INFO ("Canceling ContentObject with name " << name->GetLastComponent () << ", which is scheduled for low-priority transmission");
-              m_cancelling (m_node, item->m_packet);
+              m_cancellingData (m_node, item->m_packet);
 
               m_lowPriorityQueue.erase (item);
               if (m_queue.size () + m_lowPriorityQueue.size () == 0)
@@ -554,7 +607,7 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
               tmp ++;
 
               NS_LOG_INFO ("Canceling ContentObject with name " << name->GetLastComponent () << ", which is scheduled for transmission");
-              m_cancelling (m_node, item->m_packet);
+              m_cancellingData (m_node, item->m_packet);
 
               m_totalWaitPeriod -= item->m_gap;
               m_queue.erase (item);
@@ -586,7 +639,7 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
               tmp ++;
 
               NS_LOG_INFO ("Canceling ContentObject with name " << name->GetLastComponent () << ", which is planned for retransmission");
-              m_cancelling (m_node, item->m_packet);
+              m_cancellingData (m_node, item->m_packet);
 
               m_retxQueue.erase (item);
               if (m_retxQueue.size () == 0)
@@ -614,7 +667,14 @@ V2vNetDeviceFace::ReceiveFromNetDevice (Ptr<NetDevice>,
       return;
     }
   else{
-    NotifyJumpDistanceTrace (p);
+    if (packetType==HeaderHelper::INTEREST_NDNSIM)
+      {
+        NotifyJumpDistanceInterestTrace (p);
+      }
+    else
+      {
+        NotifyJumpDistanceDataTrace (p);
+      }
     Receive (p);
   }
 }

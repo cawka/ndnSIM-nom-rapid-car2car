@@ -112,7 +112,7 @@ CarRelayTracer::ConnectDistance ()
   Ptr<L3Protocol> ndn = m_nodePtr->GetObject<L3Protocol> ();
   for (uint32_t faceId = 0; faceId < ndn->GetNFaces (); faceId++)
     {
-      ndn->GetFace (faceId)->TraceConnectWithoutContext ("WaitingTimeVsDistanceTrace", MakeCallback (&CarRelayTracer::DistanceVsWaiting, this));
+      ndn->GetFace (faceId)->TraceConnectWithoutContext ("WaitingTimeVsDistanceDataTrace", MakeCallback (&CarRelayTracer::DistanceVsWaiting, this));
     }
 }
 
@@ -122,7 +122,7 @@ CarRelayTracer::ConnectJumpDistance ()
   Ptr<L3Protocol> ndn = m_nodePtr->GetObject<L3Protocol> ();
   for (uint32_t faceId = 0; faceId < ndn->GetNFaces (); faceId++)
     {
-      ndn->GetFace (faceId)->TraceConnectWithoutContext ("JumpDistance", MakeCallback (&CarRelayTracer::JumpDistance, this));
+      ndn->GetFace (faceId)->TraceConnectWithoutContext ("JumpDistanceData", MakeCallback (&CarRelayTracer::JumpDistance, this));
     }
 }
 
@@ -132,7 +132,7 @@ CarRelayTracer::ConnectTx ()
   Ptr<L3Protocol> ndn = m_nodePtr->GetObject<L3Protocol> ();
   for (uint32_t faceId = 0; faceId < ndn->GetNFaces (); faceId++)
     {
-      ndn->GetFace (faceId)->TraceConnectWithoutContext ("Tx", MakeCallback (&CarRelayTracer::Tx, this));
+      ndn->GetFace (faceId)->TraceConnectWithoutContext ("TxData", MakeCallback (&CarRelayTracer::Tx, this));
     }
 }
 
