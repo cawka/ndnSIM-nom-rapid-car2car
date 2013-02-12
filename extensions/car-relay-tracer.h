@@ -92,8 +92,6 @@ private:
   std::string m_node;
   Ptr<Node> m_nodePtr;
 
-  int m_jumpDistanceLastNode;
-
   boost::shared_ptr<std::ostream> m_os;
 };
 

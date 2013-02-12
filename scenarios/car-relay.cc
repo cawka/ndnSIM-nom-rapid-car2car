@@ -43,7 +43,7 @@ NS_LOG_COMPONENT_DEFINE ("Experiment");
 Ptr<ndn::NetDeviceFace>
 V2vNetDeviceFaceCallback (Ptr<Node> node, Ptr<NetDevice> device)
 {
-  NS_LOG_DEBUG ("Creating ndn::V2vNetDeviceFace on node " << node->GetId ());
+  // NS_LOG_DEBUG ("Creating ndn::V2vNetDeviceFace on node " << node->GetId ());
   return CreateObject<ndn::V2vNetDeviceFace> (node, device);
 }
 

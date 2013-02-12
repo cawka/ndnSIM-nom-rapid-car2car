@@ -78,10 +78,10 @@ CarRelayTracer::InstallAll (const std::string &file, int types)
   if (!tracers.empty ())
     {
       if (types & DISTANCE_WAITING)
-        *outputStream << "Time\tType\tDistance\tWaiting\n";
+        *outputStream << "Time\tType\tJumpDistance\tWaiting\n";
 
       if (types & JUMP_DISTANCE)
-        *outputStream << "Time\tNodeId\tDistance\n";
+        *outputStream << "Time\tNodeId\tJumpDistance\n";
 
       if (types & TX)
         *outputStream << "Time\tNodeId\tX\tY\tZ\n";
@@ -152,9 +152,10 @@ CarRelayTracer::DistanceVsWaiting (double distance, double waiting)
 void
 CarRelayTracer::JumpDistance (Ptr<const Node> node, double jumpDistance)
 {
-  if (static_cast<int32_t> (node->GetId ()) > m_jumpDistanceLastNode)
+  static int s_jumpDistanceLastNode = -1;
+  if (static_cast<int32_t> (node->GetId ()) > s_jumpDistanceLastNode)
     {
-      m_jumpDistanceLastNode = node->GetId ();
+      s_jumpDistanceLastNode = node->GetId ();
       *m_os << Simulator::Now ().ToDouble (Time::S) << "\t" << m_node << "\t" << jumpDistance << "\n";
     }
 }

@@ -2,3 +2,4 @@
 .DS*
 .lock*
 build/
+graphs/pdfs/*.pdf
