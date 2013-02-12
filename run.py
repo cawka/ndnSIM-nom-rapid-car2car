@@ -41,9 +41,8 @@ class CarRelay:
 
         subtypes = ["jump-distance", "distance", "in-cache", "tx"]
 
-        needHeader = True
-
         for subtype in subtypes:
+            needHeader = True
             f_out = open ("%s-%s.txt" % (prefix, subtype), "w")
             for distance in self.distances:
                 for run in self.runs:
@@ -63,8 +62,8 @@ class CarRelay:
             subprocess.call ("bzip2 -f \"%s-%s.txt\"" % (prefix, subtype), shell=True)
 
 try:
-    car_relay = CarRelay (runs = range(1,101),
-                          distances = range (10, 180, 40))
+    car_relay = CarRelay (runs = range(1,11),
+                          distances = range (10, 180, 5))
     car_relay.simulate ()
     pool.join ()
     car_relay.postprocess ()
