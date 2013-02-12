@@ -6,7 +6,7 @@ Custom version of NS-3 and specified version of ndnSIM needs to be installed.
 The code should also work with the latest version of ndnSIM, but it is not guaranteed.
 
     git clone git@github.com:cawka/ns-3-dev-ndnSIM.git -b ns-3.16-ndnSIM ns-3
-    git clone git@github.com:NDN-Routing/ndnSIM.git -b v0.2.3 ns-3/src/ndnSIM
+    git clone git@github.com:NDN-Routing/ndnSIM.git -b v0.2.4 ns-3/src/ndnSIM
 
     cd ns-3
     ./waf configure
@@ -61,3 +61,51 @@ When running using ./waf, it is possible to run scenario with visualizer:
 Available simulations
 =====================
 
+For more detail refer to L. Wang, A. Afanasyev, R. Kuntz, R. Vuyyuru, R. Wakikawa, and L. Zhang, "Rapid Traffic Information Dissemination Using Named Data," in Proceedings of the 1st ACM workshop on Emerging Name-Oriented Mobile Networking Design - Architecture, Algorithms, and Applications (NoM 12), Hilton Head Island, South Carolina, June 2012, pp. 7–12. (http://dx.doi.org/10.1145/2248361.2248365, http://lasr.cs.ucla.edu/afanasyev/data/files/Wang/nom.pdf)
+
+## Data propagation over time (Figure 3)
+
+Simulation scenario:
+
+    scenarios/car-relay.cc
+
+To automatically run 10 runs of simulations with different parameters for the figure:
+
+    ./waf
+    ./run.py --simulate --graph figure-3-data-propagation-vs-time
+
+To rebuild the graph without rerunning the simulation:
+
+    ./run.py --graph figure-3-data-propagation-vs-time
+
+User ``./run.py -h`` for other options.
+
+## Data propagation speed vs distance between cars (Figure 4)
+
+Simulation scenario:
+
+    scenarios/car-relay.cc
+
+To automatically run 10 runs of simulations with different parameters for the figure:
+
+    ./waf
+    ./run.py --simulate --graph figure-4-data-propagation-vs-distance
+
+To rebuild the graph without rerunning the simulation:
+
+    ./run.py --graph figure-4-data-propagation-vs-distance
+
+## Count of data transmissions (Figure 5)
+
+Simulation scenario:
+
+    scenarios/car-relay.cc
+
+To automatically run 10 runs of simulations with different parameters for the figure:
+
+    ./waf
+    ./run.py --simulate --graph figure-5-retx-count
+
+To rebuild the graph without rerunning the simulation:
+
+    ./run.py --graph figure-5-retx-count
