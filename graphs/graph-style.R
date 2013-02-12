@@ -17,7 +17,7 @@ theme_custom <- function (base_size = 10, base_family = "serif") {
       axis.title.y =       element_text(family = base_family, size = base_size, angle = 90, vjust = 0.5),
       axis.ticks.length =  unit(0.15, "cm"),
       axis.ticks.margin =  unit(0.1, "cm"),
-          
+
       legend.background =  element_rect (fill=NA, colour=NA, size=0.1),
       legend.margin =      unit(0.2, "cm"),
       legend.key =         element_rect(fill = "grey95", colour = "white"),
@@ -32,20 +32,20 @@ theme_custom <- function (base_size = 10, base_family = "serif") {
       legend.direction =   NULL,
       legend.justification = "center",
       legend.box =         NULL,
-  
+
       panel.background =   element_rect(fill = "white", colour = NA),
       panel.border =       element_rect(fill = NA, colour = "grey50"),
       panel.grid.major =   element_line(colour = "grey60", size = 0.1),
       panel.grid.minor =   element_line(colour = "grey70", size = 0.1, linetype="dotted"),
       ## panel.margin =       unit(c(0.1, 0.1, 0.1, 0.1), "lines"),
-  
+
       strip.background =   element_rect(fill = NA, colour = NA),
       strip.text.x =       element_text(family = base_family, size = base_size * 0.8),
       strip.text.y =       element_text(family = base_family, size = base_size * 0.8, angle = -90),
-  
+
       plot.background =    element_rect(colour = NA, fill = "white"),
       plot.title =         element_text(family = base_family, size = base_size),
-      plot.margin =        unit(c(0, 0, 0, 0), "lines")
+      plot.margin =        unit(c(0.1, 0.1, 0.1, 0.1), "lines")
     )
 }
 

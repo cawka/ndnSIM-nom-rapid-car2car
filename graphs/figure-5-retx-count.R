@@ -5,8 +5,8 @@ suppressMessages (library(doBy))
 
 source ("graphs/graph-style.R")
 
-input1 = "results/car-relay-tx.txt.bz2"
-input2 = "results/car-relay-in-cache.txt.bz2"
+input1 = "results/figure-5-retx-count/car-relay-tx.txt.bz2"
+input2 = "results/figure-5-retx-count/car-relay-in-cache.txt.bz2"
 output = "graphs/pdfs/figure-5-retx-count.pdf"
 
 data <- read.table (bzfile(input1, "r"), header=TRUE)
@@ -16,8 +16,10 @@ data$Run = as.factor(data$Run)
 data = subset(data, Distance %in% c(10, 50, 90, 130, 170))
 data$Distance = as.factor(data$Distance)
 
-data.summary = summaryBy (Time ~ NodeId + Run + Distance, data=data, FUN=c(function(x){length(x)-1}))
+data.summary = summaryBy (Time ~ NodeId + Run + Distance, data=data, FUN=c(function(x){length(x)}))
 names(data.summary) = c("NodeId", "Run", "Distance", "Count")
+
+data.summary = subset (data.summary, Count <= 8)
 
 data.hist = summaryBy (Count ~ Count + Run + Distance, data = data.summary, FUN=c(length))
 names(data.hist) = c("Count", "Run", "Distance", "NumberOfCars")
@@ -55,23 +57,34 @@ names(recv.ci) = c("Distance", "CachedMean", "CachedInterval")
 x= paste (sep="", recv.ci$Distance, " (", round(recv.ci$CachedMean,1), "%)")
 recv.ci$Labels = factor(x, levels=x, ordered=TRUE)
 
-
 ## print (hist.ci)
 
-g <- ggplot (hist.ci, aes(x=Count, y=NumberOfCars)) +
+data.totals = summaryBy (NumberOfCars + Interval ~ Distance, data = hist.ci, FUN=sum)
+
+hist.ci.updated = rbind (
+  data.frame (Count = c (0,0,0,0,0),
+              Distance = recv.ci$Distance,
+              NumberOfCars = recv.ci$CachedMean - data.totals$NumberOfCars.sum,
+              Interval = recv.ci$CachedInterval + data.totals$Interval.sum),
+  hist.ci)
+hist.ci.updated$NumberOfCars[hist.ci.updated$NumberOfCars < 0] = 0
+
+hist.ci.updated$Distance = factor( as.double(hist.ci.updated$Distance) )
+
+
+g <- ggplot (hist.ci.updated, aes(x=Count, y=NumberOfCars)) +
   geom_bar (aes(fill=Distance), colour=I("black"), size=0.2, stat="identity", binwidth=1, width=0.8, position="dodge") +
-  ## geom_errorbar (aes(ymin = NumberOfCars-Interval, ymax=NumberOfCars+Interval, group=Distance), width=1, position="dodge") +
-  ## geom_text (aes(x=Count, y=NumberOfCars, label=paste(sep="", round(NumberOfCars,1), "%")), size=I(3), vjust=-1, stat="identity") +
-  scale_y_continuous ("Fraction of all cars, %") + #, limits=c(0,65)) +
+
+  scale_y_continuous ("Fraction of all cars, %") +
   scale_x_discrete ("Number of transmissions") +
-  ## scale_fill_brewer ("Distance between\ncars, m\n(percent of cars\nreceived data)", palette="RdYlBu", breaks=recv.ci$Distance, labels = recv.ci$Labels) + #start=0.4, end=1,
+  scale_fill_brewer ("Distance between\ncars, m\n(percent of cars\nreceived data)", palette="RdYlBu", breaks=recv.ci$Distance, labels = recv.ci$Labels) +
   theme_custom () +
-  opts (legend.position = c(1,1),
+  theme (legend.position = c(1,1),
         legend.justification=c(1,1),
         legend.text.align=0,
         legend.direction = "vertical",
         legend.key.height = unit(1.0, "lines"))
 
-pdf (args$output, width=5, height=3)
+pdf (output, width=5, height=3)
 g
 x = dev.off ()

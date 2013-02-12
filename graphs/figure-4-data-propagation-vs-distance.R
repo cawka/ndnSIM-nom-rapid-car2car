@@ -5,7 +5,7 @@ suppressMessages (library(doBy))
 
 source ("graphs/graph-style.R")
 
-input = "results/car-relay-in-cache.txt.bz2"
+input = "results/figure-4-data-propagation-vs-distance/car-relay-in-cache.txt.bz2"
 output = "graphs/pdfs/figure-4-data-propagation-vs-distance.pdf"
 
 data <- read.table (bzfile(input, "r"), header=TRUE)
@@ -18,7 +18,7 @@ data.speed = summaryBy (DistanceFromSource + Time ~ Run + Distance, data = data,
 data.speed$Speed = data.speed$DistanceFromSource / data.speed$Time
 
 
-g <- ggplot (subset(data.speed, Speed < 110000 & Distance < 150), aes(x=Distance, y=Speed)) +
+g <- ggplot (subset(data.speed), aes(x=Distance, y=Speed)) +
   geom_boxplot (aes(group = as.factor(Distance)), size=0.3, fill='lightblue', outlier.size=1, outlier.colour="gray40")  +
   scale_y_continuous ("Data propagation speed, km/s", labels=function(x){x / 1000}) +
   scale_x_continuous ("Distance between cars, m") +
@@ -31,3 +31,5 @@ if (!file.exists ("graphs/pdfs")) {
 pdf (output, width=5, height=3)
 g
 x= dev.off ()
+
+## , limits=c(-100, 10500)

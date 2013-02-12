@@ -77,12 +77,16 @@ class CarRelay (Processor):
 
 try:
     # Simulation, processing, and graph building for Figure 3
-    fig3 = CarRelay (name="figure-3-data-propagation-vs-time", extra = ["--fixedDistance=10000"])
+    fig3 = CarRelay (name="figure-3-data-propagation-vs-time", extra = ["--fixedDistance=10000"], runs = range(1,11), distances = range (10, 180, 40))
     fig3.run ()
 
     # Simulation, processing, and graph building for Figure 4
-    fig4 = CarRelay (name="figure-4-data-propagation-vs-distance", distances = range (10, 160, 5))
+    fig4 = CarRelay (name="figure-4-data-propagation-vs-distance", distances = range (10, 160, 5), runs = range(1,11))
     fig4.run ()
+
+    # Simulation, processing, and graph building for Figure 5
+    fig5 = CarRelay (name="figure-5-retx-count", runs = range(1,11), distances = range (10, 180, 40))
+    fig5.run ()
 
 finally:
     pool.join ()
