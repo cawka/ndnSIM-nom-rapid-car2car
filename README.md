@@ -1,12 +1,12 @@
 Prerequisites
 =============
 
-Custom version of NS-3 and specified version of ndnSIM needs to be installed.
+Custom version of NS-3 and **specified version** of ndnSIM needs to be installed.
 
 The code should also work with the latest version of ndnSIM, but it is not guaranteed.
 
     git clone git@github.com:cawka/ns-3-dev-ndnSIM.git -b ns-3.16-ndnSIM ns-3
-    git clone git@github.com:NDN-Routing/ndnSIM.git -b v0.2.4 ns-3/src/ndnSIM
+    git clone git@github.com:NDN-Routing/ndnSIM.git -b v0.2.5 ns-3/src/ndnSIM
 
     cd ns-3
     ./waf configure
@@ -69,16 +69,18 @@ Simulation scenario:
 
     scenarios/car-relay.cc
 
-To automatically run 10 runs of simulations with different parameters for the figure:
+To automatically run 10 runs of simulations with different parameters for the figure and build a graph for the simulation:
 
     ./waf
-    ./run.py --simulate --graph figure-3-data-propagation-vs-time
+    ./run.py -s figure-3-data-propagation-vs-time
 
 To rebuild the graph without rerunning the simulation:
 
-    ./run.py --graph figure-3-data-propagation-vs-time
+    ./run.py figure-3-data-propagation-vs-time
 
 User ``./run.py -h`` for other options.
+
+**Note that provided scripts rely on R (http://www.r-project.org/) with ggplog2 module to be installed.**
 
 ## Data propagation speed vs distance between cars (Figure 4)
 
@@ -89,11 +91,11 @@ Simulation scenario:
 To automatically run 10 runs of simulations with different parameters for the figure:
 
     ./waf
-    ./run.py --simulate --graph figure-4-data-propagation-vs-distance
+    ./run.py -s figure-4-data-propagation-vs-distance
 
 To rebuild the graph without rerunning the simulation:
 
-    ./run.py --graph figure-4-data-propagation-vs-distance
+    ./run.py figure-4-data-propagation-vs-distance
 
 ## Count of data transmissions (Figure 5)
 
@@ -104,8 +106,8 @@ Simulation scenario:
 To automatically run 10 runs of simulations with different parameters for the figure:
 
     ./waf
-    ./run.py --simulate --graph figure-5-retx-count
+    ./run.py -s figure-5-retx-count
 
 To rebuild the graph without rerunning the simulation:
 
-    ./run.py --graph figure-5-retx-count
+    ./run.py figure-5-retx-count

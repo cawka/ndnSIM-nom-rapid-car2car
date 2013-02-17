@@ -17,14 +17,14 @@ parser = argparse.ArgumentParser(description='Simulation runner')
 parser.add_argument('scenarios', metavar='scenario', type=str, nargs='*',
                     help='Scenario to run')
 
-parser.add_argument('-l, --list', dest="list", action='store_true', default=False,
+parser.add_argument('-l', '--list', dest="list", action='store_true', default=False,
                     help='Get list of available scenarios')
 
-parser.add_argument('-s, --simulate', dest="simulate", action='store_true', default=False,
+parser.add_argument('-s', '--simulate', dest="simulate", action='store_true', default=False,
                     help='Run simulation and postprocessing (false by default)')
 
-parser.add_argument('-g, --graph', dest="graph", action='store_true', default=True,
-                    help='Build a graph for the scenario (true by default)')
+parser.add_argument('-g', '--no-graph', dest="graph", action='store_false', default=True,
+                    help='Do not build a graph for the scenario (builds a graph by default)')
 
 args = parser.parse_args()
 

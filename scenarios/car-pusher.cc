@@ -41,10 +41,15 @@ using namespace std;
 NS_LOG_COMPONENT_DEFINE ("Experiment");
 
 Ptr<ndn::NetDeviceFace>
-V2vNetDeviceFaceCallback (Ptr<Node> node, Ptr<NetDevice> device)
+V2vNetDeviceFaceCallback (Ptr<Node> node, Ptr<ndn::L3Protocol> ndn, Ptr<NetDevice> device)
 {
   NS_LOG_DEBUG ("Creating ndn::V2vNetDeviceFace on node " << node->GetId ());
-  return CreateObject<ndn::V2vNetDeviceFace> (node, device);
+
+  Ptr<ndn::NetDeviceFace> face = CreateObject<ndn::V2vNetDeviceFace> (node, device);
+  ndn->AddFace (face);
+  // NS_LOG_LOGIC ("Node " << node->GetId () << ": added NetDeviceFace as face #" << *face);
+
+  return face;
 }
 
 int
