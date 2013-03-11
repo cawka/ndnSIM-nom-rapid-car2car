@@ -125,10 +125,12 @@ V2v::DoPropagateInterest (Ptr<Face> inFace,
   BOOST_FOREACH (const fib::FaceMetric &metricFace, pitEntry->GetFibEntry ()->m_faces.get<fib::i_metric> ())
     {
       NS_LOG_DEBUG ("Trying " << boost::cref(metricFace));
-      if (metricFace.m_status == fib::FaceMetric::NDN_FIB_RED) // all non-read faces are in the front of the list
+      //if (metricFace.m_status == fib::FaceMetric::NDN_FIB_RED) // all non-read faces are in the front of the list
+      if (metricFace.GetStatus () == fib::FaceMetric::NDN_FIB_RED) // all non-read faces are in the front of the list
         break;
 
-      if (!TrySendOutInterest (inFace, metricFace.m_face, header, origPacket, pitEntry))
+      //if (!TrySendOutInterest (inFace, metricFace.m_face, header, origPacket, pitEntry))
+      if (!TrySendOutInterest (inFace, metricFace.GetFace (), header, origPacket, pitEntry))
         {
           continue;
         }
@@ -199,7 +201,8 @@ V2v::DidExhaustForwardingOptions (Ptr<Face> inFace,
   // Try to push new packet further with lowest priority possible on all L3 faces
   BOOST_FOREACH (const fib::FaceMetric &face, pitEntry->GetFibEntry ()->m_faces)
     {
-      TrySendLowPriority (face.m_face, origPacket);
+      //TrySendLowPriority (face.m_face, origPacket);
+      TrySendLowPriority (face.GetFace (), origPacket);
     }
 }
 
