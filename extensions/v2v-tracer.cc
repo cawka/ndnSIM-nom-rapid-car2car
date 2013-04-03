@@ -93,6 +93,7 @@ V2vTracer::PrintHeader (std::ostream &os) const
 
 V2vTracer::V2vTracer (boost::shared_ptr<std::ostream> os, Ptr<Node> node)
 : m_nodePtr (node)
+, m_os (os)
 {
   m_node = boost::lexical_cast<string> (m_nodePtr->GetId ());
 
@@ -119,11 +120,11 @@ V2vTracer::Connect ()
       ndn->GetFace (faceId)->TraceConnectWithoutContext ("Canceling", MakeCallback (&V2vTracer::Canceling, this));
     }
 
-  Config::Connect ("/NodeList/"+m_node+"/DeviceList/*/$ns3::WifiNetDevice/Phy/PhyTxBegin", MakeCallback (&V2vTracer::PhyOutData, this));
+  Config::ConnectWithoutContext ("/NodeList/"+m_node+"/DeviceList/*/$ns3::WifiNetDevice/Phy/PhyTxBegin", MakeCallback (&V2vTracer::PhyOutData, this));
 }
 
 void
-V2vTracer::DidAddEntry (Ptr<cs::Entry> csEntry)
+V2vTracer::DidAddEntry (Ptr<const cs::Entry> csEntry)
 {
   *m_os << Simulator::Now ().ToDouble (Time::S) << "\t"
        << m_node << "\t" << "DataCached" << "\t" << csEntry->GetName ().GetLastComponent () << "\n";
@@ -131,14 +132,14 @@ V2vTracer::DidAddEntry (Ptr<cs::Entry> csEntry)
 
 
 void
-V2vTracer::InInterest (std::string context, Ptr<const InterestHeader> header, Ptr<const Face> face)
+V2vTracer::InInterest (Ptr<const Interest> header, Ptr<const Face> face)
 {
   *m_os << Simulator::Now ().ToDouble (Time::S) << "\t"
        << m_node << "\t" << "Incoming interest" << "\t" << header->GetName ().GetLastComponent () << "\n";
 }
 
 void
-V2vTracer::PhyOutData (std::string context,  Ptr<const Packet> packet)
+V2vTracer::PhyOutData (Ptr<const Packet> packet)
 {
   *m_os << Simulator::Now ().ToDouble (Time::S) << "\t"
        << m_node << "\t" << "Broadcasting" << "\t" << *packet/*->PeekPacketTag<CcnxNameComponentsTag> ()->GetName ()->GetLastComponent ()*/ << "\n";

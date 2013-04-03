@@ -66,11 +66,11 @@ private:
   void
   PrintHeader (std::ostream &os) const;
 
-  void DidAddEntry (Ptr<cs::Entry> csEntry);
+  void DidAddEntry (Ptr<const cs::Entry> csEntry);
 
-  void InInterest (std::string context, Ptr<const InterestHeader> header, Ptr<const Face> face);
+  void InInterest (Ptr<const Interest> header, Ptr<const Face> face);
 
-  void PhyOutData (std::string context,  Ptr<const Packet> packet);
+  void PhyOutData (Ptr<const Packet> packet);
 
   void Canceling (Ptr<Node> node, Ptr<const Packet> packet);
 
