@@ -91,7 +91,13 @@ To rebuild the graph without rerunning the simulation:
 
 User ``./run.py -h`` for other options.
 
-**Note that provided scripts rely on R (http://www.r-project.org/) with ggplot2 module to be installed.**
+**Note that provided scripts rely on R (http://www.r-project.org/) with proto, ggplot2, and doBy modules to be installed.**  For example, after you install R, run the following to install necessary modules:
+
+    sudo R
+    install.packages ('proto')
+    install.packages ('ggplot2')
+    install.packages ('doBy')
+
 
 ## Data propagation speed vs distance between cars (Figure 4)
 
