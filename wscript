@@ -30,8 +30,8 @@ def configure(conf):
 
     conf.check_boost(lib='system iostreams')
     boost_version = conf.env.BOOST_VERSION.split('_')
-    if int(boost_version[0]) < 1 or int(boost_version[1]) < 48:
-        Logs.error ("ndnSIM requires at least boost version 1.48")
+    if int(boost_version[0]) < 1 or int(boost_version[1]) < 46:
+        Logs.error ("ndnSIM requires at least boost version 1.46")
         Logs.error ("Please upgrade your distribution or install custom boost libraries (http://ndnsim.net/faq.html#boost-libraries)")
         exit (1)
 
