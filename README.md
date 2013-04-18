@@ -1,21 +1,32 @@
 Prerequisites
 =============
 
-Custom version of NS-3 and **specified version** of ndnSIM needs to be installed.
+Download, configure, compile, and install NS-3 and ndnSIM. For more information refer to http://ndnsim.net 
 
-The code should also work with the latest version of ndnSIM, but it is not guaranteed.
+Example steps to install NS-3 and ndnSIM in optimized mode (without logging, but with all compiler optimizations):
 
-    git clone git@github.com:cawka/ns-3-dev-ndnSIM.git -b ns-3.16-ndnSIM ns-3
-    git clone git@github.com:NDN-Routing/ndnSIM.git ns-3/src/ndnSIM
+	# switch to some folder outside this repository. For example, to ~/Downloads
+	cd ~/Downloads/
+
+    mkdir ndnSIM
+    cd ndnSIM
+    git clone git://github.com/cawka/ns-3-dev-ndnSIM.git ns-3
+    git clone git://github.com/cawka/pybindgen.git pybindgen
+    git clone git://github.com/NDN-Routing/ndnSIM.git ns-3/src/ndnSIM
 
     cd ns-3
-    ./waf configure
-    ./waf install
+    ./waf configure -d optimized
+    ./waf
+
+    # install to /usr/local
+    sudo ./waf install
 
 For more information how to install NS-3 and ndnSIM, please refer to http://ndnsim.net website.
 
 Compiling
 =========
+
+(switch back to this repository)
 
 ``./waf configure``
 
