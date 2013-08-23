@@ -11,8 +11,10 @@ Example steps to install NS-3 and ndnSIM in optimized mode (without logging, but
     mkdir ndnSIM
     cd ndnSIM
     git clone git://github.com/cawka/ns-3-dev-ndnSIM.git ns-3
+    (cd ns-3; git checkout -b ndnSIM-0.4.3 origin/ndnSIM-0.4.3)
     git clone git://github.com/cawka/pybindgen.git pybindgen
     git clone git://github.com/NDN-Routing/ndnSIM.git ns-3/src/ndnSIM
+    (cd ns-3/src/ndnSIM; git checkout -b v0.4.3 v0.4.3)
 
     cd ns-3
     ./waf configure -d optimized
